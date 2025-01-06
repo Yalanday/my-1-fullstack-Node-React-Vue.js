@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist", // Папка для скомпилированных файлов
+    "rootDir": "./src", // Папка исходных файлов
+    "esModuleInterop": true,
+    "moduleResolution": "node", // Решение модулей
+    "target": "ES6",
+    "module": "commonjs",
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
