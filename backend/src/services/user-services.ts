@@ -69,6 +69,23 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
     }
 }
 
+export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.params.id) {
+        res.status(400).json({message: 'Id is required'});
+        return;
+    }
+
+    try {
+        const connection = await connectToDB();
+        const [result] = await connection.execute<OkPacket>('UPDATE users SET name = ?, email = ? WHERE id = ?', [req.body.name, req.body.email, req.params.id]);
+        await connection.end();
+        res.status(200).json({message: 'User updated successfully'});
+    } catch (error) {
+        console.error('❌ Error updating user:', error);
+        res.status(500).json({message: 'Failed to update user'});
+    }
+}
+
 export const calcualate = (a: number, b: number) => {
     return a + b;
 }

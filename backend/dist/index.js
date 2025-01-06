@@ -50,6 +50,7 @@ const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
 app.get('/users', user_services_1.getUsers);
 app.post('/users', user_services_1.addUser);
 app.delete('/users/:id', user_services_1.deleteUser);
+app.put('/users/:id', user_services_1.updateUser);
 // Обработчик ошибок
 app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Something went wrong', error: err.message });

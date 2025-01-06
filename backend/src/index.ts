@@ -1,7 +1,7 @@
 import express, {Request, Response, NextFunction} from 'express';
 import {connectToDB} from './db/db';
 import cors from 'cors';
-import {getUsers, addUser, deleteUser} from "./services/user-services";
+import {getUsers, addUser, deleteUser, updateUser} from "./services/user-services";
 
 const corsOptions = {
     origin: ['http://localhost:3000'],  // Разрешенные источники
@@ -43,6 +43,7 @@ const startServer = async () => {
 app.get('/users', getUsers);
 app.post('/users', addUser);
 app.delete('/users/:id', deleteUser);
+app.put('/users/:id', updateUser);
 
 // Обработчик ошибок
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

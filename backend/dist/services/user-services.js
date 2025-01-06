@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.calcualate = exports.deleteUser = exports.addUser = exports.getUsers = void 0;
+exports.calcualate = exports.updateUser = exports.deleteUser = exports.addUser = exports.getUsers = void 0;
 const db_1 = require("../db/db");
 //
 // Типизация функции получения пользователей
@@ -69,6 +69,23 @@ const deleteUser = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.deleteUser = deleteUser;
+const updateUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.params.id) {
+        res.status(400).json({ message: 'Id is required' });
+        return;
+    }
+    try {
+        const connection = yield (0, db_1.connectToDB)();
+        const [result] = yield connection.execute('UPDATE users SET name = ?, email = ? WHERE id = ?', [req.body.name, req.body.email, req.params.id]);
+        yield connection.end();
+        res.status(200).json({ message: 'User updated successfully' });
+    }
+    catch (error) {
+        console.error('❌ Error updating user:', error);
+        res.status(500).json({ message: 'Failed to update user' });
+    }
+});
+exports.updateUser = updateUser;
 const calcualate = (a, b) => {
     return a + b;
 };
