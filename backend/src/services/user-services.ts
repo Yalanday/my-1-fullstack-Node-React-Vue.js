@@ -1,12 +1,21 @@
 import {NextFunction, Request, Response} from "express";
+// db
 import {connectToDB} from "../db/db";
-import {OkPacket, RowDataPacket} from "mysql2";  // Подключаем актуальные типы
-//
-// Типизация функции получения пользователей
-export const getUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const connection = await connectToDB();
+// token lib
+import jwt from "jsonwebtoken";
+// types
+import {ResultSetHeader, RowDataPacket} from "mysql2";  // Подключаем актуальные типы
+import {Connection} from "mysql2/promise";
+import {UserRequestBody} from "../types/types";
+// helpers
+import {Validation} from "../helpers/validation";
 
+// Типизация функции получения пользователей
+export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    let connection: Connection;
     try {
+        connection = await connectToDB();
+
         // Выполнение SQL-запроса для получения всех записей из таблицы users
         const [rows] = await connection.execute<RowDataPacket[]>('SELECT * FROM users');
         console.log('Users in the database:', rows);
@@ -15,39 +24,65 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction):
         console.error('❌ Failed to fetch users:', error);
         next(error);  // Перехватываем ошибку и передаем ее в middleware обработки ошибок
     } finally {
-        await connection.end();
+        if (connection) {
+            try {
+                await connection.end();
+            } catch (closeError) {
+                console.error('❌ Error closing connection:', closeError);
+            }
+        }
+
     }
 };
 
 // Типизация функции добавления пользователя
-interface UserRequestBody {
-    id?: number
-    name: string;
-    email: string; // Ожидаем email в запросе
-}
+
 
 export const addUser = async (req: Request<{}, {}, UserRequestBody>, res: Response, next: NextFunction): Promise<void> => {
-    const {name, email} = req.body;
 
-    // Проверяем, что и name, и email присутствуют в теле запроса
-    if (!name || !email) {
-        res.status(400).json({message: 'Name and email are required'});
+    const {name, email, password} = req.body;
+    // Проверяем, что и name, и email, и password присутствуют в теле запроса
+    if (!name || !email || !password) {
+        res.status(400).json({message: 'Name, email, and password are required'});
+        return; // Завершаем выполнение функции, чтобы избежать дальнейшего выполнения кода
+    }
+
+    if (!Validation.email(email)) {
+        res.status(422).json({...Validation.emailResult});
         return;
     }
 
-    try {
-        // Подключаемся к базе данных
-        const connection = await connectToDB();
+    if (!Validation.password(password)) {
+        res.status(422).json({...Validation.passwordResult});
+        return;
+    }
 
-        // Выполняем SQL-запрос для добавления нового пользователя
-        const [result] = await connection.execute<OkPacket>('INSERT INTO users (name, email) VALUES (?, ?)', [name, email]);
+    let connection: Connection;
+
+    try {
+        connection = await connectToDB();
+        const [result] = await connection.execute<ResultSetHeader>('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', [name, email, password]);
         await connection.end();
 
+        const token = jwt.sign(
+            { userId: result.insertId, email },
+            process.env.JWT_SECRET || 'defaultSecret', // Используйте переменную окружения
+            { expiresIn: '1h' } // Токен истечет через час
+        );
+
         // Возвращаем ответ с успешным добавлением
-        res.status(201).json({message: 'User added successfully', userId: result.insertId});
+        res.status(201).json({message: 'User added successfully', userId: result.insertId, token});
     } catch (error) {
         console.error('❌ Error adding user:', error);
         res.status(500).json({message: 'Failed to add user'});
+    } finally {
+        if (connection) {
+            try {
+                await connection.end();
+            } catch (closeError) {
+                console.error('❌ Error closing connection:', closeError);
+            }
+        }
     }
 };
 
@@ -58,15 +93,27 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
         return;
     }
 
+
+    let connection: Connection;
+
     try {
-        const connection = await connectToDB();
-        const [result] = await connection.execute<OkPacket>('DELETE FROM users WHERE id = ?', [req.params.id]);
-        await connection.end();
+        connection = await connectToDB();
+        const [result] = await connection.execute<ResultSetHeader>('DELETE FROM users WHERE id = ?', [req.params.id]);
         res.status(200).json({message: 'User deleted successfully'});
     } catch (error) {
         console.error('❌ Error deleting user:', error);
         res.status(500).json({message: 'Failed to delete user'});
+    } finally {
+        if (connection) {
+            try {
+                await connection.end();
+            } catch (closeError) {
+                console.error('❌ Error closing connection:', closeError);
+            }
+
+        }
     }
+
 }
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -75,17 +122,25 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         return;
     }
 
+    let connection: Connection;
+
     try {
-        const connection = await connectToDB();
-        const [result] = await connection.execute<OkPacket>('UPDATE users SET name = ?, email = ? WHERE id = ?', [req.body.name, req.body.email, req.params.id]);
-        await connection.end();
+        connection = await connectToDB();
+        const [result] = await connection.execute<ResultSetHeader>('UPDATE users SET name = ?, email = ? WHERE id = ?', [req.body.name, req.body.email, req.params.id]);
         res.status(200).json({message: 'User updated successfully'});
     } catch (error) {
         console.error('❌ Error updating user:', error);
         res.status(500).json({message: 'Failed to update user'});
+    } finally {
+        if (connection) {
+            try {
+                await connection.end();
+            } catch (closeError) {
+                console.error('❌ Error closing connection:', closeError);
+            }
+        }
     }
 }
-
 
 
 export const calcualate = (a: number, b: number) => {

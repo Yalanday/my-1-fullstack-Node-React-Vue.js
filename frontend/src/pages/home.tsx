@@ -10,14 +10,16 @@ interface IUser {
 const Home: React.FC = () => {
     const [users, setUsers] = useState<IUser[]>([]); // Типизируем массив пользователей
     const [error, setError] = useState<string | null>(null); // error может быть строкой или null
+    const [errorTips, setErrorTips] = useState<string[] | null>(null)
     const [name, setName] = useState<string>('');
-    const [email, setEmail] = useState("");
+    const [email, setEmail] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
 
-        if (!name || !email) {
-            setError("Name and email are required");
+        if (!name || !email || !password) {
+            setError("Имя, email и пароль обязательны");
             return;
         }
 
@@ -27,16 +29,23 @@ const Home: React.FC = () => {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ name, email }), // Отправляем имя и почту
+                body: JSON.stringify({ name, email, password }),
             });
 
             if (response.ok) {
                 setName("");
                 setEmail("");
+                setPassword("");
                 setError(null);
+                const data = await response.json()
+                localStorage.setItem("token", data.token)
+
                 alert("User added successfully!");
+                
             } else {
-                throw new Error("Failed to add user");
+                const errorData = await response.json(); // Извлекаем данные ошибки в формате JSON
+                setErrorTips(errorData.tips)
+                setError(errorData.message || 'Ошибка регистрации пользователя');
             }
         } catch (error) {
             if (error instanceof Error) {
@@ -46,6 +55,7 @@ const Home: React.FC = () => {
             }
         }
     };
+
 
     const delUser = async (id: number) => {
         try {
@@ -90,9 +100,6 @@ const Home: React.FC = () => {
         }
     }
 
-
-
-
     useEffect(() => {
         // Функция для запроса пользователей
         const fetchUsers = async () => {
@@ -119,10 +126,6 @@ const Home: React.FC = () => {
         fetchUsers();
     }, [name]);  // Пустой массив зависимостей - запрос будет выполнен один раз при монтировании компонента
 
-    if (error) {
-        return <div>Error: {error}</div>;
-    }
-
     return (
         <div>
             <h1>Users</h1>
@@ -132,7 +135,7 @@ const Home: React.FC = () => {
                 <ul>
                     {users.map((user) => (
                         <li
-                            onClick={async()=> await updateUser(user.id, 'papa', 'asdf@dsf.com')}
+                            onClick={async () => await updateUser(user.id, 'papa', 'asdf@dsf.com')}
                             key={user.id}>
                             {user.name}({user.id})
                             <button onClick={async () => await delUser(user.id)} >УДАЛИТЬ</button>
@@ -160,7 +163,24 @@ const Home: React.FC = () => {
                         required
                     />
                 </div>
+                <div>
+                    <label>Password:</label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                </div>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
+                {
+                    errorTips?.map((item, index) => (
+                        <p key={index}>
+                            {item}
+                        </p>
+                    ))
+                }
+
                 <button type="submit">Add User</button>
             </form>
         </div>

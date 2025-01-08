@@ -1,9 +1,10 @@
 import express, {Request, Response, NextFunction} from 'express';
 import {connectToDB} from './db/db';
 import cors from 'cors';
+//types
+import {Routes} from "./types/types";
 // routes
 import userRoutes from "./routes/user-router";
-import {Routes} from "./types/types";
 import initRoutes from "./routes/init-router";
 
 const corsOption = {
@@ -58,12 +59,9 @@ class AppClass {
     }
 }
 
+const routes: Routes[] = [...initRoutes, ...userRoutes]
+
 const myApp = new AppClass(3001, corsOption)
-
-let routes: Routes[];
-
-routes = [...initRoutes, ...userRoutes]
-
 myApp.autoRegisterRoutes(routes);
 
 myApp.startServer().catch((error) => {
