@@ -86,6 +86,8 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     }
 }
 
+
+
 export const calcualate = (a: number, b: number) => {
     return a + b;
 }

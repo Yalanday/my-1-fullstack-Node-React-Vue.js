@@ -1,9 +1,12 @@
 import express, {Request, Response, NextFunction} from 'express';
 import {connectToDB} from './db/db';
 import cors from 'cors';
-import {getUsers, addUser, deleteUser, updateUser} from "./services/user-services";
+// routes
+import userRoutes from "./routes/user-router";
+import {Routes} from "./types/types";
+import initRoutes from "./routes/init-router";
 
-const corsOptions = {
+const corsOption = {
     origin: ['http://localhost:3000'],  // Разрешенные источники
     methods: ['GET', 'POST', 'PUT', 'DELETE'],               // Разрешенные HTTP-методы
     allowedHeaders: ['Content-Type', 'Authorization'],        // Разрешенные заголовки
@@ -12,46 +15,58 @@ const corsOptions = {
     optionsSuccessStatus: 204                                  // Статус для успешных preflight-запросов
 };
 
+class AppClass {
+    app: express.Application;
+    PORT: number | string;
 
-const app = express();
-const PORT = process.env.PORT || 3001;
-
-app.use(express.json());
-app.use(cors(corsOptions));
-
-app.get('/', (req, res) => {
-    res.send('Hello, World!');
-});
-
-// Функция для запуска сервера
-const startServer = async () => {
-    try {
-        // Подключаемся к базе данных
-        await connectToDB();
-
-        // Запускаем сервер
-        app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
-        });
-    } catch (error) {
-        console.error('Error starting server:', error);
-        process.exit(1);  // Завершаем процесс с кодом ошибки
+    constructor(port: number, corsOptions: cors.CorsOptions) {
+        this.app = express();
+        this.initializeMiddleware();
+        this.setConfigCors(corsOptions);
+        this.PORT = process.env.PORT || port;
     }
-};
 
-//
-app.get('/users', getUsers);
-app.post('/users', addUser);
-app.delete('/users/:id', deleteUser);
-app.put('/users/:id', updateUser);
+    // Метод для настройки middleware
+    private initializeMiddleware = () => this.app.use(express.json());
 
-// Обработчик ошибок
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    res.status(500).json({message: 'Something went wrong', error: err.message});
-});
+    private setConfigCors = (configurations: cors.CorsOptions) => this.app.use(cors(configurations));
 
-// Запуск асинхронной функции в верхнем уровне
-startServer().catch((error) => {
+// Метод для запуска сервера
+    startServer = async () => {
+        try {
+            await connectToDB();
+
+            this.app.listen(this.PORT, () => {
+                console.log(`Server is running on port ${this.PORT}`);
+            });
+
+            // Обработчик ошибок - добавляем после запуска сервера
+            this.app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+                res.status(500).json({message: 'Something went wrong', error: err.message});
+            });
+
+        } catch (error) {
+            console.error('Error starting server:', error);
+            process.exit(1);  // Завершаем процесс с кодом ошибки
+        }
+    };
+
+    public autoRegisterRoutes(routes: Routes[]) {
+        routes.forEach(route => {
+            this.app[route.method](route.path, route.handler);
+        });
+    }
+}
+
+const myApp = new AppClass(3001, corsOption)
+
+let routes: Routes[];
+
+routes = [...initRoutes, ...userRoutes]
+
+myApp.autoRegisterRoutes(routes);
+
+myApp.startServer().catch((error) => {
     console.error('Unhandled Error:', error);
     process.exit(1); // Завершаем процесс при непойманной ошибке
 })
