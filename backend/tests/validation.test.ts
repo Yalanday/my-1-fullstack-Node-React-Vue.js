@@ -1,13 +1,4 @@
-
-import {calcualate} from "../src/services/user-services";
-import {Validation} from "../src/helpers/validation";
-
-describe('app', () => {
-    it('num', () => {
-        expect(calcualate(5, 5)).toBe(10);
-    })
-})
-
+import {Validation} from "../src/business/business-helpers/validation";
 
 
 describe('Validation: ', () => {

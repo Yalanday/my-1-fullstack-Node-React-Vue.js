@@ -1,7 +1,7 @@
 import express, {NextFunction, Request, Response} from "express";
 import cors from "cors";
-import {connectToDB} from "./db/db";
-import {Routes} from "./types/types";
+import {connectToDB} from "../db/db";
+import {Routes} from "../types/types";
 
 export class AppClass {
     app: express.Application;

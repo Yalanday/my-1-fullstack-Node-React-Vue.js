@@ -1,5 +1,6 @@
-import {addUser, deleteUser, getAllUsers, updateUser} from "../services/user-services";
-import {Routes} from "../types/types";
+import {Routes} from "../../../types/types";
+import {deleteUser, getAllUsers} from "../controllers/userQuerryControllers";
+import {addUser, updateUser} from "../controllers/user-controllers";
 
 const userRoutes: Routes[] = [
     {method: 'get', path: '/users', handler: getAllUsers},

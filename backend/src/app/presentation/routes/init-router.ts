@@ -1,4 +1,4 @@
-import {Routes} from "../types/types";
+import {Routes} from "../../../types/types";
 import {Request, Response} from "express";
 
 const initHandler = (req: Request, res: Response): void => {
